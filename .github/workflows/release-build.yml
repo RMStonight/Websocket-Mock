@@ -51,6 +51,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Verify bundle icons
+        run: node scripts/verify-bundle-icons.mjs
+
       - name: Build Tauri app
         run: npm run tauri -- build --ci ${{ matrix.args }}
 
