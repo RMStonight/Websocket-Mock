@@ -9,7 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-13
+          - platform: macos-latest
             args: --bundles app,dmg
             artifact: macos
           - platform: ubuntu-22.04
