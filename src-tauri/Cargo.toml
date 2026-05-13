@@ -1,0 +1,23 @@
+[package]
+name = "websocket-mock"
+version = "0.1.0"
+description = "Cross-platform WebSocket mock tool"
+authors = ["Codex"]
+edition = "2021"
+
+[lib]
+name = "websocket_mock_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+chrono = { version = "0.4", features = ["clock", "serde"] }
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
+tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
+uuid = { version = "1", features = ["serde", "v4"] }
