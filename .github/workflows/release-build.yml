@@ -9,7 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - platform: macos-13
             args: --bundles app,dmg
             artifact: macos
           - platform: ubuntu-22.04
@@ -20,6 +20,8 @@ jobs:
             artifact: windows
 
     runs-on: ${{ matrix.platform }}
+    env:
+      RUST_BACKTRACE: 1
 
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +52,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app
-        run: npm run tauri -- build ${{ matrix.args }}
+        run: npm run tauri -- build --ci ${{ matrix.args }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
