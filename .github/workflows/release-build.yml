@@ -2,6 +2,17 @@ name: Release Build
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag, for example v0.1.0. Leave empty to build artifacts without publishing a GitHub Release."
+        required: false
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -63,9 +74,62 @@ jobs:
           name: websocket-mock-${{ matrix.artifact }}
           path: |
             src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.app
             src-tauri/target/release/bundle/**/*.AppImage
             src-tauri/target/release/bundle/**/*.deb
             src-tauri/target/release/bundle/**/*.exe
             src-tauri/target/release/bundle/**/*.msi
           if-no-files-found: warn
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Prepare release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-files
+
+          while IFS= read -r -d '' file; do
+            cp "$file" "release-files/$(basename "$file")"
+          done < <(find release-assets -type f \( \
+            -name '*.dmg' -o \
+            -name '*.AppImage' -o \
+            -name '*.deb' -o \
+            -name '*.exe' -o \
+            -name '*.msi' \
+          \) -print0)
+
+          if [ -z "$(find release-files -type f -print -quit)" ]; then
+            echo "No release files found."
+            find release-assets -maxdepth 5 -type f -print
+            exit 1
+          fi
+
+          ls -lh release-files
+
+      - name: Publish release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" release-files/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release-files/* \
+              --title "$RELEASE_TAG" \
+              --generate-notes
+          fi
